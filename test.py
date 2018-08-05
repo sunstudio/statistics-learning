@@ -13,5 +13,12 @@ def axis_test():
     e = np.tile(c, (2, 1))
     print(e)
 
+
+def rangeTest():
+    a = np.array([[1, 2, 3], [4, 5, 6],[7,8,9]])
+    b = a[:, 2:2]
+    print(b)
+
+
 if __name__ == '__main__':
-    axis_test()
+    rangeTest()
