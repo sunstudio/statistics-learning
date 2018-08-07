@@ -3,13 +3,139 @@ import operator
 import matplotlib.pyplot as plt
 import os
 
+
+# kd tree
+class KDNode:
+    """
+    kd树结点类
+    """
+    def __init__(self, element=None, dimension=0, left=None, right=None):
+        self.element = element
+        self.dimension = dimension
+        self.left = left
+        self.right = right
+
+    def isLeaf(self):
+        return self.left is None and self.right is None
+
+
+def createKdTree(dataset, depth=0):
+    """
+    创建kd树（递归方法）
+    :param dataset: 数据集
+    :param depth: 深度
+    :return: 根结点
+    """
+    if dataset is None or len(dataset) == 0:
+        return None
+    shape0 = dataset.shape
+    current = depth % shape0[1]
+    count = shape0[0]
+    dataset = np.array(sorted(dataset, key=operator.itemgetter(current)))
+    median = int(count/2)
+    node = KDNode(dataset[median], current)
+    if median > 0:
+        node.left = createKdTree(dataset[0:median], depth+1)
+    if median < dataset.shape[0]:
+        node.right = createKdTree(dataset[median+1:], depth+1)
+    return node
+
+
+def printKdTree(root):
+    """
+    打印kd树
+    :param root:根结点
+    :return: 无
+    """
+    if root is None:
+        print("None")
+        return
+    if not isinstance(root, KDNode):
+        raise Exception("类型不正确，必须是KDNode类型")
+        return
+    print('(\t')
+    print(root.element)
+    print('left child:')
+    printKdTree(root.left)
+    print('right child:')
+    printKdTree(root.right)
+    print(')')
+
+
+def searchKdTree(root: KDNode, element: np.ndarray):
+    """
+    搜索kd树（递归法）得到最近邻(Nearest Neighbour)
+    :param root: 根结点
+    :param element: 要查找的元素
+    :return: tuple(结点,距离)
+    """
+    if root is None:
+        return None, np.inf
+    # 先走到叶子结点
+    current = root
+    path = []
+    nearest = None
+    min_distance = 99999999
+    while current is not None:
+        v1 = current.element[current.dimension]
+        v2 = element[current.dimension]
+        distance = np.linalg.norm(current.element - element)
+        if distance < min_distance:
+            min_distance = distance
+            nearest = current
+            print('current nearest :\t {0} with {1:.2f}'.format(current.element, min_distance))
+            if distance == 0:
+                return nearest, min_distance
+        path.append(current)
+        if v2 < v1:
+            current = current.left
+        else:
+            current = current.right
+
+    while len(path) > 0 and min_distance > 0:
+        current = path.pop()
+        child = None
+        if abs(current.element[current.dimension] - element[current.dimension]) >= min_distance:
+            continue
+        if element[current.dimension] < current.element[current.dimension]:
+            child = current.left
+        else:
+            if element[current.dimension] > current.element[current.dimension]:
+                child = current.right
+        if not child:
+            continue
+        path.append(child)
+        distance = np.linalg.norm(child.element - element)
+        if distance < min_distance:
+            min_distance = distance
+            nearest = child
+            print('current nearest :\t {0} with {1:.2f}'.format(child.element, min_distance))
+    return nearest, min_distance
+
+
+def testCreateKdTree():
+    dataset = np.array([[2,3],[5,4],[9,6],[4,7],[8,1],[7,2]])
+    root = createKdTree(dataset, 0)
+    printKdTree(root)
+
+
+def testSearchKdTree():
+    # dataset = np.array([[2, 3], [5, 4], [9, 6], [4, 7], [8, 1], [7, 2]])
+    dataset = np.random.rand(20).reshape(10, 2)*10
+    print('dataset is:\r\n', dataset)
+    root = createKdTree(dataset, 0)
+    query = np.random.rand(2)*10
+    # query = np.array([5, 7])
+    print('query is:\r\n', query)
+    node, distance = searchKdTree(root, query)
+    print('final nearest :\r\n {0} with {1:.2f}'.format(node.element, distance))
+
+
 # 以下代码为machine learning in action书第2章的例子
-
-
 def createDataSet():
     group = np.array([[1.0,1.1],[1.0,1.0],[0,0],[0,0.1]])
     labels = ['A','A','B','B']
-    return group,labels
+    return group, labels
 
 
 def knn(sample, dataSet, labels, k):
@@ -31,7 +157,7 @@ def knn(sample, dataSet, labels, k):
     for i in range(k):
         label = labels[sortedDistance[i]]
         classCount[label] = classCount.get(label,0)+1
-    sortedClassCount = sorted(classCount.items(), key = operator.itemgetter(1), reverse=True)
+    sortedClassCount = sorted(classCount.items(), key=operator.itemgetter(1), reverse=True)
     return sortedClassCount[0][0]
 
 
@@ -140,6 +266,10 @@ def dating_knn():
 
 # 以下为knn手写数字识别
 def knn_digit():
+    """
+    用knn进行手写数字识别。以trainingDigits文件夹中的文件为分类样本，对testDigits文件夹的文件进行分类测试。
+    :return:
+    """
     path = './data/digits/trainingDigits/'
     files = os.listdir(path)
     traningSize = len(files)
@@ -162,6 +292,11 @@ def knn_digit():
 
 
 def digitText2matrix(file):
+    """
+    读取手写数字文本文件（内容为32和32列的0和1），返回1024维向量
+    :param file:
+    :return:
+    """
     fr = open(file)
     lines = fr.readlines()
     fr.close()
@@ -176,7 +311,7 @@ def digitText2matrix(file):
 
 def plotDigit(file):
     """
-    根据文件内容，用matplot显示一个数字
+    用matplotlib显示手写数字的二值图像
     :param file:
     :return:
     """
@@ -210,7 +345,8 @@ if __name__ == '__main__':
     # datingClassTest()
     # dating_knn()
     # knn_digit()
-    testPlostDigit()
+    # testPlostDigit()
+    # testCreateKdTree()
+    testSearchKdTree()
     input('press enter to exit ...')
-
 
