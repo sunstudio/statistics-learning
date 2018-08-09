@@ -12,28 +12,37 @@ def tranning(data:np.ndarray, labels:np.ndarray):
     """
     dimension = data.shape[1]
     data_size = data.shape[0]
-    priori = {}        # 先验概率
+    priori = {}         # 先验概率
     conditional = {}    # 条件概率
-    # middle_count={}
+    # 以下循环统计次数
     for i in range(data_size):
         priori[labels[i]] = priori.get(labels[i],0)+1
-        if not labels[i] in conditional:
+        if labels[i] not in conditional:
             conditional[labels[i]] = {}
         for j in range(dimension):
-            if not j in conditional[labels[i]]:
+            if j not in conditional[labels[i]]:
                 conditional[labels[i]][j] = {}
             k = data[i,j]
             conditional[labels[i]][j][k] = conditional[labels[i]][j].get(k,0)+1
+    # 将次数除以总次数得到对应的概率
+    y = 1.0    # 对应课本P51的λ值
     for i in conditional:
         for j in range(dimension):
             for k in conditional[i][j]:
-                conditional[i][j][k] = conditional[i][j][k] / priori[i]
+                conditional[i][j][k] = (conditional[i][j][k]+y) / (priori[i]+len(conditional[i][j])*y)
     for k in priori:
-        priori[k]=priori[k]/data_size
+        priori[k]=(priori[k]+y)/(data_size+len(priori)*y)
     return priori, conditional
 
 
 def classify_bayes(sample:np.ndarray, priori:dict, conditional:dict):
+    """
+    bayes分类
+    :param sample: 待分类样本
+    :param priori: 先验概率
+    :param conditional: 条件概率
+    :return: (分类,概率)
+    """
     max_probability = -1
     max_label = None
     for c in priori:
