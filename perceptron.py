@@ -1,6 +1,4 @@
-# 感知机学习算法
-# sunjilei  20180708
-
+# 感知机学习算法 bzxysjl@163.com  20180708
 import numpy as np
 
 
