@@ -132,12 +132,6 @@ def testSearchKdTree():
 
 
 # 以下代码为machine learning in action书第2章的例子
-def createDataSet():
-    group = np.array([[1.0,1.1],[1.0,1.0],[0,0],[0,0.1]])
-    labels = ['A','A','B','B']
-    return group, labels
-
-
 def knn(sample, dataSet, labels, k):
     """
     kNN（k近邻）算法，根据最近的k个点的大多数类别来确定要识别样本的类别。
@@ -161,9 +155,15 @@ def knn(sample, dataSet, labels, k):
     return sortedClassCount[0][0]
 
 
+def createDataSet():
+    group = np.array([[1.0,1.1],[1.0,1.0],[0,0],[0,0.1]])
+    labels = ['A','A','B','B']
+    return group, labels
+
+
 def simpleKnnTest():
     group, labels = createDataSet()
-    r = knn([0, 0], group, labels, 3)
+    r = knn([0.1, 0.1], group, labels, 3)
     print('class is ', r)
 
 
@@ -340,13 +340,44 @@ def testPlostDigit():
         plotDigit(path+files[400+i])
 
 
+def plot_test():
+    dataset=[[0.1,5.0,1],
+             [0.1,6.0,1],
+             [0.1,7.9,1],
+             [1.8,6.0,1],
+             [3.6,5.0,1],
+             [3.6,9.0,2],
+             [4.5,5.0,2],
+             [4.5,7.5,1],
+             [5.0,5.5,2],
+             [5.5,9.5,2],
+             [7.8,9.0,2]]
+    one = [ row for row in dataset if row[2]==1 ]
+    two = [ row for row in dataset if row[2]==2 ]
+    one = np.array(one)
+    two = np.array(two)
+    all = [one, two]
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for item in all:
+        x = item[:,0]
+        y = item[:,1]
+        l = item[:,2]
+        c = 'b' if l[0]==1 else 'r'
+        m = 's' if l[0]==1 else '^'
+        ax.scatter(x, y, c=c, s=12, marker=m)
+    plt.show()
+
+
 if __name__ == '__main__':
+    # simpleKnnTest()
     # datingDataFigure()
     # datingClassTest()
     # dating_knn()
     # knn_digit()
     # testPlostDigit()
     # testCreateKdTree()
-    testSearchKdTree()
+    # testSearchKdTree()
+    plot_test()
     input('press enter to exit ...')
 
