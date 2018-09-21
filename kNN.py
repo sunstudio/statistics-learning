@@ -1,4 +1,3 @@
-# k近邻算法分类  bzxysjl@163.com
 import numpy as np
 import operator
 import matplotlib.pyplot as plt
