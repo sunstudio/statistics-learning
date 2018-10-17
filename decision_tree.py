@@ -120,7 +120,9 @@ def test_dataset():
     print('after split', sub)
     best = choose_best_feature(dataset)
     print('best feature:', best)
-    create_tree(dataset, labels)
+    tree = create_tree(dataset, labels)
+    print('tree')
+    print(tree)
 
 
 if __name__ == "__main__":
