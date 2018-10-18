@@ -8,7 +8,7 @@ def create_dataset():
                [1, 0, 'no'],
                [0, 1, 'no'],
                [0, 1, 'no']]
-    labels = ['不需浮出水面', '有蹼']
+    labels = ['under water', 'flippers']
     return dataset, labels
 
 
