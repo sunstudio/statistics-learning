@@ -1,5 +1,7 @@
-import  math
-import  operator
+import math
+import operator
+import timeit
+import matplotlib.pyplot as plt
 
 
 def create_dataset():
@@ -8,7 +10,7 @@ def create_dataset():
                [1, 0, 'no'],
                [0, 1, 'no'],
                [0, 1, 'no']]
-    labels = ['under water', 'flippers']
+    labels = ['no surfacing', 'flippers']
     return dataset, labels
 
 
@@ -69,7 +71,7 @@ def choose_best_feature(dataset: list):
         if original_entropy - temp_entropy > most_entory_decrease:
             best_feature = feature
             most_entory_decrease = original_entropy - temp_entropy
-        return best_feature
+    return best_feature
 
 
 def majority_vote(class_list: list):
@@ -94,6 +96,7 @@ def create_tree(dataset: list, labels: list):
     :param labels: feature names
     :return: the created decision tree
     """
+    labels2 = labels[::]
     class_list = [sample[-1] for sample in dataset]
     if len(class_list) == class_list.count(class_list[0]):
         return class_list[0]
@@ -103,30 +106,167 @@ def create_tree(dataset: list, labels: list):
     best_label = labels[best]
     tree = {best_label: {}}
     values = set([sample[best] for sample in dataset])
-    labels.remove(best_label)
+    labels2.remove(best_label)
     for v in values:
         sub = split_dataset(dataset, best, v)
-        tree[best_label][v] = create_tree(sub, labels[:])
+        tree[best_label][v] = create_tree(sub, labels2)
     return tree
 
 
-def test_dataset():
+def classify(tree, featureLables, sample):
+    firstKey = tree.keys().__iter__().__next__()
+    firstValue = tree[firstKey]
+    featureIndex = featureLables.index(firstKey)
+    for v in firstValue.keys():
+        if v == sample[featureIndex]:
+            if type(firstValue[v]).__name__ == 'dict':
+                return classify(firstValue[v], featureLables, sample)
+            else:
+                return firstValue[v]
+
+
+def saveTree(tree, fileName):
+    import pickle
+    stream = open(fileName, 'w')
+    pickle.dump(tree, stream)
+    stream.close()
+
+
+def loadTree(fileName):
+    import pickle
+    stream = open(fileName, 'r')
+    tree = pickle.load(stream)
+    stream.close()
+    return tree
+
+
+def get_leaf_number(tree):
+    """
+    get the number of leaves of a tree
+    :param tree: the decision tree
+    :return:
+    """
+    num = 0
+    firstValue = tree.values().__iter__().__next__()
+    for key in firstValue.keys():
+        if type(firstValue[key]).__name__ == 'dict':
+            num += get_leaf_number(firstValue[key])
+        else:
+            num += 1
+    return num
+
+
+def get_tree_depth(tree):
+    """
+    get the depth of a decision tree
+    :param tree:
+    :return:
+    """
+    depth = 0
+    firstValue = tree.values().__iter__().__next__()
+    # check every child tree, get max depth between them
+    for key in firstValue.keys():
+        if type(firstValue[key]).__name__ == 'dict':
+            temp = get_tree_depth(firstValue[key])
+            if temp > depth:
+                depth = temp
+    return depth + 1
+
+
+def plotTree(tree):
+    plt.figure(1)
+    plt.clf()
+    axis1 = plt.subplot(111)
+    # dataset, labels = create_dataset()
+    # tree = create_tree(dataset, labels)
+    print(tree)
+    plotSubTree(axis1, tree, (0.5, 0.9), None, (0.5/get_leaf_number(tree), 0.8/get_tree_depth(tree)))
+    plt.show()
+
+
+def plotSubTree(axis, node, position, parentPosition=None, step=(0.1, 0.1)):
+    """
+    draw a decision tree
+    :param node: a node of a decision tree
+    :param position: the position(x,y) of the root of the tree
+    :param parentPosition: the position(x,y) of the parent node
+    :param step: the distance(x,y) between adjacent nodes in the tree
+    :return: none
+    """
+    if type(node).__name__ == 'dict':
+        firstKey = node.keys().__iter__().__next__()
+        firstValue = node[firstKey]
+        childrenNum = len(firstValue)
+    else:
+        firstKey = node
+        firstValue = node
+    if parentPosition:
+        axis.annotate(firstKey, xy=parentPosition, xytext=position,
+                      arrowprops={'arrowstyle':'<-'}, bbox={'boxstyle':'round4'},
+                      verticalalignment="top", horizontalalignment="center")
+    else:
+        axis.annotate(firstKey, xytext=position, xy=position,
+                      bbox={'boxstyle':'round4'},
+                      verticalalignment="top", horizontalalignment="center")
+    if type(firstValue).__name__ != 'dict':
+        return
+    i = 0
+    for key in firstValue.keys():
+        newPos = ((i - childrenNum/2)*step[0]+position[0], position[1]-step[1])
+        plotSubTree(axis, firstValue[key], newPos, position, step)
+        axis.text( (position[0]+newPos[0])/2, (position[1]+newPos[1])/2, key )
+        i += 1
+
+
+
+def retrieveTree(i):
+    listOfTrees = [{'no surfacing': {0: 'no', 1: {'flippers':  {0: 'no', 1: 'yes'}}}},
+        {'no surfacing': {0: 'no', 1: {'flippers':  {0: {'head': {0: 'no', 1: 'yes'}}, 1: 'no'}}}}
+    ]
+    return listOfTrees[i]
+
+
+def testDepthAndLeaf():
+    tree = retrieveTree(0)
+    n = get_leaf_number(tree)
+    print(f'leaf number:{n}')
+    d = get_tree_depth(tree)
+    print(f'depth:{d}')
+
+
+def test_tree():
     dataset, labels = create_dataset()
     print(dataset)
     print(labels)
-    entropy = calculate_entropy(dataset)
-    print("entropy :", entropy)
-    sub = split_dataset(dataset, 1, 1)
-    print('after split', sub)
-    best = choose_best_feature(dataset)
-    print('best feature:', best)
+    # entropy = calculate_entropy(dataset)
+    # print("entropy :", entropy)
+    # sub = split_dataset(dataset, 1, 1)
+    # print('after split', sub)
+    # best = choose_best_feature(dataset)
+    # print('best feature:', best)
     tree = create_tree(dataset, labels)
-    print('tree')
+    # print('tree')
+    # print(tree)
+    plotTree(tree)
+    sample = [1,0]
+    c1 = classify(tree, labels, sample)
+    print(f'the class of {sample} is {c1}')
+    sample = [1,1]
+    c1 = classify(tree, labels, sample)
+    print(f'the class of {sample} is {c1}')
+
+
+def testContactLens():
+    stream = open('./data/lenses.txt', 'r')
+    dataSet = [line.strip().split('\t') for line in stream.readlines()]
+    print(dataSet)
+    labels = ['age', 'prescript', 'astigmatic', 'tearRate']
+    tree = create_tree(dataSet, labels)
     print(tree)
+    plotTree(tree)
 
 
-if __name__ == "__main__":
-    test_dataset()
-
-
+# a = timeit.timeit(stmt='test_tree()', setup='from __main__ import test_tree', number=1)
+# print(a)
+testContactLens()
 
