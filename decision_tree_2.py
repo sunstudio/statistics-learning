@@ -4,6 +4,57 @@ import timeit
 import matplotlib.pyplot as plt
 
 
+class TreeNode:
+    def __init__(self):
+        self.level = 0
+        self.feature = ''
+        self.children = {}
+        self.leafNumber = 0
+        self.depth = 0
+
+    def setLeaf(self, feature, level):
+        self.feature = feature
+        self.level = level
+
+    def isLeaf(self):
+        return len(self.children) == 0
+
+    def __str__(self):
+        s = '{'
+        s += self.feature + "("+str(self.level)+"):"
+        for child in self.children.keys():
+            s += str(child) + ":"
+            s += str(self.children[child])
+        s += "}"
+        return s
+
+    def getLeafNumber(self):
+        """
+        get the number of leaves of a tree
+        :param tree: the decision tree
+        :return:
+        """
+        self.leafNumber = 0
+        if self.isLeaf():
+            self.leafNumber = 1
+            return
+        for child in self.children.values():
+            child.getLeafNumber()
+            self.leafNumber += child.leafNumber
+
+    def getDepth(self):
+        """
+        get the depth of a decision tree
+        :param tree:
+        :return:
+        """
+        if self.isLeaf():
+            return self.level
+        for child in self.children.values():
+            child.getDepth()
+            if child.depth > self.depth:
+                self.depth = child.depth
+
 def create_dataset():
     dataset = [[1, 1, 'yes'],
                [1, 1, 'yes'],
@@ -89,7 +140,7 @@ def majority_vote(class_list: list):
     return sorted_list[0][0]
 
 
-def create_tree(dataset: list, labels: list):
+def create_tree(dataset: list, labels: list, level):
     """
     create decision tree
     :param dataset:
@@ -98,19 +149,25 @@ def create_tree(dataset: list, labels: list):
     """
     labels2 = labels[::]
     class_list = [sample[-1] for sample in dataset]
+    node = TreeNode()
     if len(class_list) == class_list.count(class_list[0]):
-        return class_list[0]
+        temp = TreeNode()
+        temp.setLeaf(class_list[0], level)
+        return temp
     if len(dataset[0]) == 1:
-        return majority_vote(class_list)
+        temp = TreeNode()
+        temp.setLeaf(majority_vote(class_list), level)
+        return temp
     best = choose_best_feature(dataset)
     best_label = labels[best]
-    tree = {best_label: {}}
+    node.level = level
+    node.feature = best_label
     values = set([sample[best] for sample in dataset])
     labels2.remove(best_label)
     for v in values:
         sub = split_dataset(dataset, best, v)
-        tree[best_label][v] = create_tree(sub, labels2)
-    return tree
+        node.children[v] = create_tree(sub, labels2, level + 1)
+    return node
 
 
 def classify(tree, featureLables, sample):
@@ -140,51 +197,13 @@ def loadTree(fileName):
     return tree
 
 
-def get_leaf_number(tree):
-    """
-    get the number of leaves of a tree
-    :param tree: the decision tree
-    :return:
-    """
-    num = 0
-    if type(tree).__name__ == 'str':
-        return 1
-    firstValue = tree.values().__iter__().__next__()
-    for key in firstValue.keys():
-        # if type(firstValue[key]).__name__ == 'dict':
-            num += get_leaf_number(firstValue[key])
-        # else:
-        #    num += 1
-    return num
-
-
-def get_tree_depth(tree):
-    """
-    get the depth of a decision tree
-    :param tree:
-    :return:
-    """
-    depth = 0
-    firstValue = tree.values().__iter__().__next__()
-    # check every child tree, get max depth between them
-    for key in firstValue.keys():
-        if type(firstValue[key]).__name__ == 'dict':
-            temp = get_tree_depth(firstValue[key])
-            if temp > depth:
-                depth = temp
-    return depth + 1
-
-
 def plotTree(tree):
     plt.figure(1)
     plt.clf()
     axis1 = plt.subplot(111)
-    # dataset, labels = create_dataset()
-    # tree = create_tree(dataset, labels)
-    # print(tree)
-    leafs = get_leaf_number(tree)
-    depth = get_tree_depth(tree)
-    plotSubTree(axis1, tree, (0.5, 0.95, 0.9, 0.9), None, (0.9/leafs, 0.9/depth))
+    tree.getLeafNumber()
+    tree.getDepth()
+    plotSubTree(axis1, tree, (0.5, 0.95, 0.9, 0.9), None, (0.9/tree.leafNumber, 0.9/tree.depth))
     plt.show()
 
 
@@ -216,10 +235,10 @@ def plotSubTree(axis, node, rect, parentPosition=None, step=(0.1, 0.1)):
         return
     i = 0
     left = rect[0] - rect[3]/2
-    totalLeafs = get_leaf_number(node)
+    totalLeafs = node.leafNumber
     for key in firstValue.keys():
         child = firstValue[key]
-        leafs = get_leaf_number(child)
+        leafs = child.leafNumber
         newRect = (left + step[0]*(i+leafs/2), rect[1]-step[1], step[0]*leafs, 0)
         plotSubTree(axis, firstValue[key], newRect, (rect[0],rect[1]), step)
         axis.text((rect[0]+newRect[0])/2, (rect[1]+newRect[1])/2, key)
@@ -234,14 +253,6 @@ def retrieveTree(i):
     return listOfTrees[i]
 
 
-def testDepthAndLeaf():
-    tree = retrieveTree(0)
-    n = get_leaf_number(tree)
-    print(f'leaf number:{n}')
-    d = get_tree_depth(tree)
-    print(f'depth:{d}')
-
-
 def test_tree():
     dataset, labels = create_dataset()
     print(dataset)
@@ -252,16 +263,18 @@ def test_tree():
     # print('after split', sub)
     # best = choose_best_feature(dataset)
     # print('best feature:', best)
-    tree = create_tree(dataset, labels)
+    tree = create_tree(dataset, labels, 1)
     print('tree')
     print(tree)
     plotTree(tree)
+    """
     sample = [1,0]
     c1 = classify(tree, labels, sample)
     print(f'the class of {sample} is {c1}')
     sample = [1,1]
     c1 = classify(tree, labels, sample)
     print(f'the class of {sample} is {c1}')
+    """
 
 
 def testContactLens():
@@ -269,12 +282,13 @@ def testContactLens():
     dataSet = [line.strip().split('\t') for line in stream.readlines()]
     print(dataSet)
     labels = ['age', 'prescript', 'astigmatic', 'tearRate']
-    tree = create_tree(dataSet, labels)
+    tree = create_tree(dataSet, labels, 1)
     print(tree)
-    plotTree(tree)
+    # plotTree(tree)
 
 
 # a = timeit.timeit(stmt='test_tree()', setup='from __main__ import test_tree', number=1)
 # print(a)
-testContactLens()
+# testContactLens()
+test_tree()
 
