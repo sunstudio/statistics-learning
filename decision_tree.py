@@ -147,12 +147,14 @@ def get_leaf_number(tree):
     :return:
     """
     num = 0
+    if type(tree).__name__ == 'str':
+        return 1
     firstValue = tree.values().__iter__().__next__()
     for key in firstValue.keys():
-        if type(firstValue[key]).__name__ == 'dict':
+        # if type(firstValue[key]).__name__ == 'dict':
             num += get_leaf_number(firstValue[key])
-        else:
-            num += 1
+        # else:
+        #    num += 1
     return num
 
 
@@ -179,16 +181,18 @@ def plotTree(tree):
     axis1 = plt.subplot(111)
     # dataset, labels = create_dataset()
     # tree = create_tree(dataset, labels)
-    print(tree)
-    plotSubTree(axis1, tree, (0.5, 0.9), None, (0.5/get_leaf_number(tree), 0.8/get_tree_depth(tree)))
+    # print(tree)
+    leafs = get_leaf_number(tree)
+    depth = get_tree_depth(tree)
+    plotSubTree(axis1, tree, (0.5, 0.95, 0.9, 0.9), None, (0.6/leafs, 0.9/depth))
     plt.show()
 
 
-def plotSubTree(axis, node, position, parentPosition=None, step=(0.1, 0.1)):
+def plotSubTree(axis, node, rect, parentPosition=None, step=(0.1, 0.1)):
     """
     draw a decision tree
     :param node: a node of a decision tree
-    :param position: the position(x,y) of the root of the tree
+    :param rect: the rectangle(x,y,w,h) in which the tree plots, and (x,y) is top center of the rectangle
     :param parentPosition: the position(x,y) of the parent node
     :param step: the distance(x,y) between adjacent nodes in the tree
     :return: none
@@ -201,21 +205,25 @@ def plotSubTree(axis, node, position, parentPosition=None, step=(0.1, 0.1)):
         firstKey = node
         firstValue = node
     if parentPosition:
-        axis.annotate(firstKey, xy=parentPosition, xytext=position,
+        axis.annotate(firstKey, xy=parentPosition, xytext=(rect[0],rect[1]),
                       arrowprops={'arrowstyle':'<-'}, bbox={'boxstyle':'round4'},
                       verticalalignment="top", horizontalalignment="center")
     else:
-        axis.annotate(firstKey, xytext=position, xy=position,
+        axis.annotate(firstKey, xytext=(rect[0],rect[1]), xy=(rect[0],rect[1]),
                       bbox={'boxstyle':'round4'},
                       verticalalignment="top", horizontalalignment="center")
     if type(firstValue).__name__ != 'dict':
         return
     i = 0
+    left = rect[0] - rect[3]/2
+    totalLeafs = get_leaf_number(node)
     for key in firstValue.keys():
-        newPos = ((i - childrenNum/2)*step[0]+position[0], position[1]-step[1])
-        plotSubTree(axis, firstValue[key], newPos, position, step)
-        axis.text( (position[0]+newPos[0])/2, (position[1]+newPos[1])/2, key )
-        i += 1
+        child = firstValue[key]
+        leafs = get_leaf_number(child)
+        newRect = (left + step[0]*(i+leafs/2), rect[1]-step[1], step[0]*leafs, 0)
+        plotSubTree(axis, firstValue[key], newRect, (rect[0],rect[1]), step)
+        axis.text((rect[0]+newRect[0])/2, (rect[1]+newRect[1])/2, key)
+        i += leafs
 
 
 
@@ -245,8 +253,8 @@ def test_tree():
     # best = choose_best_feature(dataset)
     # print('best feature:', best)
     tree = create_tree(dataset, labels)
-    # print('tree')
-    # print(tree)
+    print('tree')
+    print(tree)
     plotTree(tree)
     sample = [1,0]
     c1 = classify(tree, labels, sample)
