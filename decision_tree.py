@@ -63,7 +63,8 @@ def choose_best_feature(dataset: list):
     most_entory_decrease = 0
     original_entropy = calculate_entropy(dataset)
     for feature in range(feature_num):
-        feature_values = set(dataset[feature])
+        featureList = [x[feature] for x in dataset]
+        feature_values = set(featureList)
         temp_entropy = 0
         for v in feature_values:
             sub = split_dataset(dataset, feature, v)

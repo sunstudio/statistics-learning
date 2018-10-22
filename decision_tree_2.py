@@ -19,15 +19,6 @@ class TreeNode:
     def isLeaf(self):
         return len(self.children) == 0
 
-    def __str__(self):
-        s = '{'
-        s += self.feature + "("+str(self.level)+"):"
-        for child in self.children.keys():
-            s += str(child) + ":"
-            s += str(self.children[child])
-        s += "}"
-        return s
-
     def getLeafNumber(self):
         """
         get the number of leaves of a tree
@@ -48,12 +39,30 @@ class TreeNode:
         :param tree:
         :return:
         """
+        self.depth = 1
         if self.isLeaf():
-            return self.level
+            return
         for child in self.children.values():
             child.getDepth()
-            if child.depth > self.depth:
-                self.depth = child.depth
+            if child.depth >= self.depth:
+                self.depth = child.depth + 1
+
+    def addChild(self, value, feature):
+        node = TreeNode()
+        node.level = self.level + 1
+        node.feature = feature
+        self.children[value] = node
+        return node
+
+    def __str__(self):
+        s = '{'
+        s += self.feature + "("+str(self.level)+"):"
+        for child in self.children.keys():
+            s += str(child) + ":"
+            s += str(self.children[child])
+        s += "}"
+        return s
+
 
 def create_dataset():
     dataset = [[1, 1, 'yes'],
@@ -110,11 +119,12 @@ def choose_best_feature(dataset: list):
     :return: the best feature
     """
     feature_num = len(dataset[0]) - 1
-    best_feature = -1
+    best_feature = 9999
     most_entory_decrease = 0
     original_entropy = calculate_entropy(dataset)
     for feature in range(feature_num):
-        feature_values = set(dataset[feature])
+        featureList = [x[feature] for x in dataset]
+        feature_values = set(featureList)
         temp_entropy = 0
         for v in feature_values:
             sub = split_dataset(dataset, feature, v)
@@ -203,53 +213,62 @@ def plotTree(tree):
     axis1 = plt.subplot(111)
     tree.getLeafNumber()
     tree.getDepth()
-    plotSubTree(axis1, tree, (0.5, 0.95, 0.9, 0.9), None, (0.9/tree.leafNumber, 0.9/tree.depth))
+    plotSubTree(axis1, tree, (0.05, 0.95, 0.9, 0.9), None)
     plt.show()
 
 
-def plotSubTree(axis, node, rect, parentPosition=None, step=(0.1, 0.1)):
+def plotSubTree(axis, node, rect, parentPosition = None):
     """
     draw a decision tree
     :param node: a node of a decision tree
-    :param rect: the rectangle(x,y,w,h) in which the tree plots, and (x,y) is top center of the rectangle
+    :param rect: the rectangle(x,y,w,h) in which the tree plots, and (x,y) is top left point of the rectangle
     :param parentPosition: the position(x,y) of the parent node
     :param step: the distance(x,y) between adjacent nodes in the tree
     :return: none
     """
-    if type(node).__name__ == 'dict':
-        firstKey = node.keys().__iter__().__next__()
-        firstValue = node[firstKey]
-        childrenNum = len(firstValue)
-    else:
-        firstKey = node
-        firstValue = node
+    centerX = rect[0]+rect[3]/2
     if parentPosition:
-        axis.annotate(firstKey, xy=parentPosition, xytext=(rect[0],rect[1]),
+        axis.annotate(node.feature, xy=parentPosition, xytext=(centerX,rect[1]),
                       arrowprops={'arrowstyle':'<-'}, bbox={'boxstyle':'round4'},
                       verticalalignment="top", horizontalalignment="center")
     else:
-        axis.annotate(firstKey, xytext=(rect[0],rect[1]), xy=(rect[0],rect[1]),
+        axis.annotate(node.feature, xytext=(centerX,rect[1]), xy=(centerX,rect[1]),
                       bbox={'boxstyle':'round4'},
                       verticalalignment="top", horizontalalignment="center")
-    if type(firstValue).__name__ != 'dict':
+    if node.isLeaf():
         return
-    i = 0
-    left = rect[0] - rect[3]/2
+    left = rect[0]
     totalLeafs = node.leafNumber
-    for key in firstValue.keys():
-        child = firstValue[key]
+    for key in node.children.keys():
+        child = node.children[key]
         leafs = child.leafNumber
-        newRect = (left + step[0]*(i+leafs/2), rect[1]-step[1], step[0]*leafs, 0)
-        plotSubTree(axis, firstValue[key], newRect, (rect[0],rect[1]), step)
-        axis.text((rect[0]+newRect[0])/2, (rect[1]+newRect[1])/2, key)
-        i += leafs
-
+        newRect = (left, rect[1] - rect[3]/node.depth, rect[3]*leafs/totalLeafs, rect[3] - rect[3]/node.depth)
+        plotSubTree(axis, child, newRect, (centerX, rect[1]))
+        axis.text((centerX+newRect[0]+newRect[3]/2)/2, (rect[1]+newRect[1])/2, key)
+        left += rect[2]*leafs/totalLeafs
 
 
 def retrieveTree(i):
-    listOfTrees = [{'no surfacing': {0: 'no', 1: {'flippers':  {0: 'no', 1: 'yes'}}}},
-        {'no surfacing': {0: 'no', 1: {'flippers':  {0: {'head': {0: 'no', 1: 'yes'}}, 1: 'no'}}}}
-    ]
+    # listOfTrees = [{'no surfacing': {0: 'no', 1: {'flippers':  {0: 'no', 1: 'yes'}}}},
+    #    {'no surfacing': {0: 'no', 1: {'flippers':  {0: {'head': {0: 'no', 1: 'yes'}}, 1: 'no'}}}}
+    # ]
+    listOfTrees = []
+    tree0 = TreeNode()
+    tree0.level = 1
+    tree0.feature = 'no surfacing'
+    tree0.addChild(0, 'no')
+    tree0.addChild(1, 'yes')
+    listOfTrees.append(tree0)
+
+    tree1 = TreeNode()
+    tree1.level = 1
+    tree1.feature = 'no surfacing'
+    child1 = tree1.addChild(0, 'no')
+    child2 = tree1.addChild(1, 'flippers')
+    child2.addChild(0,'no')
+    child2.addChild(1, 'yes')
+    listOfTrees.append(tree1)
+
     return listOfTrees[i]
 
 
@@ -264,6 +283,7 @@ def test_tree():
     # best = choose_best_feature(dataset)
     # print('best feature:', best)
     tree = create_tree(dataset, labels, 1)
+    # tree = retrieveTree(0)
     print('tree')
     print(tree)
     plotTree(tree)
@@ -284,11 +304,11 @@ def testContactLens():
     labels = ['age', 'prescript', 'astigmatic', 'tearRate']
     tree = create_tree(dataSet, labels, 1)
     print(tree)
-    # plotTree(tree)
+    plotTree(tree)
 
 
 # a = timeit.timeit(stmt='test_tree()', setup='from __main__ import test_tree', number=1)
 # print(a)
-# testContactLens()
-test_tree()
+testContactLens()
+# test_tree()
 
