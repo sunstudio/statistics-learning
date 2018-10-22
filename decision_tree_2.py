@@ -227,13 +227,16 @@ def plotSubTree(axis, node, rect, parentPosition = None):
     :return: none
     """
     centerX = rect[0]+rect[3]/2
+    bbox = {'boxstyle': 'round4'}
+    if node.isLeaf():
+        bbox['fc'] = (0.8, 1, 0.8)
     if parentPosition:
-        axis.annotate(node.feature, xy=parentPosition, xytext=(centerX,rect[1]),
-                      arrowprops={'arrowstyle':'<-'}, bbox={'boxstyle':'round4'},
+        axis.annotate(node.feature, xy=parentPosition, xytext=(centerX, rect[1]),
+                      arrowprops={'arrowstyle':'<-'}, bbox=bbox,
                       verticalalignment="top", horizontalalignment="center")
     else:
-        axis.annotate(node.feature, xytext=(centerX,rect[1]), xy=(centerX,rect[1]),
-                      bbox={'boxstyle':'round4'},
+        axis.annotate(node.feature, xytext=(centerX,rect[1]), xy=(centerX, rect[1]),
+                      bbox=bbox,
                       verticalalignment="top", horizontalalignment="center")
     if node.isLeaf():
         return
