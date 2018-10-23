@@ -226,7 +226,7 @@ def plotSubTree(axis, node, rect, parentPosition = None):
     :param step: the distance(x,y) between adjacent nodes in the tree
     :return: none
     """
-    centerX = rect[0]+rect[3]/2
+    centerX = rect[0]+rect[2]/2
     bbox = {'boxstyle': 'round4'}
     if node.isLeaf():
         bbox['fc'] = (0.8, 1, 0.8)
@@ -247,7 +247,7 @@ def plotSubTree(axis, node, rect, parentPosition = None):
         leafs = child.leafNumber
         newRect = (left, rect[1] - rect[3]/node.depth, rect[3]*leafs/totalLeafs, rect[3] - rect[3]/node.depth)
         plotSubTree(axis, child, newRect, (centerX, rect[1]))
-        axis.text((centerX+newRect[0]+newRect[3]/2)/2, (rect[1]+newRect[1])/2, key)
+        axis.text((centerX+newRect[0]+newRect[2]/2)/2, (rect[1]+newRect[1])/2, key)
         left += rect[2]*leafs/totalLeafs
 
 
