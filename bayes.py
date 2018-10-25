@@ -1,6 +1,6 @@
 # Bayes估计  bzxysjl@163.com
+# 李航《统计学习方法》
 import numpy as np
-from collections import defaultdict
 
 
 def tranning(data:np.ndarray, labels:np.ndarray):
